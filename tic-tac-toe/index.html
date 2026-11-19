@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Kreuz & Kreis</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kreuz & Kreis">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#ffcf5a">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --ink:#3a2314;
+  --paper:#fff3c4;
+  --cell:#fffaf0;
+  --x:#ee4b3c;
+  --o:#2f8ae6;
+  --yellow:#ffd23f;
+  --font:"Marker Felt","Chalkboard SE","Bradley Hand",ui-rounded,"SF Pro Rounded",system-ui,sans-serif;
+  --outline:-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink),2px 2px 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),3px 0 0 var(--ink),-3px 0 0 var(--ink);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;font-family:var(--font);font-weight:900;color:var(--ink);touch-action:manipulation;
+  -webkit-user-select:none;user-select:none}
+html{background:#ffcf5a}
+body{background:
+  radial-gradient(circle at 20% 15%,rgba(255,255,255,.35) 0 60px,transparent 61px),
+  radial-gradient(circle at 85% 80%,rgba(255,255,255,.25) 0 90px,transparent 91px),
+  repeating-linear-gradient(45deg,#ffcf5a 0 22px,#ffc845 22px 44px)}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer;touch-action:manipulation}
+
+#app{position:fixed;inset:0;display:flex;flex-direction:column;gap:12px;
+  padding:calc(env(safe-area-inset-top) + 10px) max(14px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 12px) max(14px,env(safe-area-inset-left))}
+
+/* ---------- Kopf: Spieler ---------- */
+.top{display:flex;align-items:center;gap:8px}
+.back{flex:none;width:44px;height:44px;border-radius:50%;background:var(--paper);border:4px solid var(--ink);box-shadow:0 4px 0 var(--ink);display:grid;place-items:center;font-size:20px;text-decoration:none;color:var(--ink)}
+.title{flex:1;margin:0;text-align:center;font-size:30px;color:#fff;text-shadow:var(--outline),0 5px 0 var(--ink);transform:rotate(-1.5deg);white-space:nowrap}
+.players{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:stretch}
+.pl{position:relative;display:grid;grid-template-columns:38px 1fr;align-items:center;gap:8px;padding:8px 10px;background:var(--paper);border:4px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);transition:transform .2s cubic-bezier(.2,1.7,.4,1),background .2s;min-width:0}
+.pl .sym{width:38px;height:38px}
+.pl .sym svg{width:100%;height:100%;display:block}
+.pl .nm{font-size:16px;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl .need{display:block;font-size:12px;opacity:.7;font-weight:700;margin-top:1px}
+.pl .sc{position:absolute;top:-12px;right:-8px;min-width:32px;height:32px;padding:0 6px;border-radius:16px;background:#fff;border:3px solid var(--ink);display:grid;place-items:center;font-size:18px;font-variant-numeric:tabular-nums}
+.pl.active{transform:translateY(-3px) scale(1.04)}
+.pl.p0.active{background:#ffd9d3}
+.pl.p1.active{background:#d5e9ff}
+.pl:not(.active){opacity:.75}
+.draws{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:700;text-align:center;line-height:1.1}
+.draws b{font-size:22px;font-weight:900}
+
+.status{min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:22px;line-height:1.1;padding:0 6px}
+.status span{display:inline-block}
+.status .pop{animation:pop .35s cubic-bezier(.2,1.8,.4,1)}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+
+/* ---------- Brett ---------- */
+.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.board{--n:3;width:min(100%,calc(100dvh - 330px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));aspect-ratio:1;max-width:100%;
+  display:grid;grid-template-columns:repeat(var(--n),1fr);grid-template-rows:repeat(var(--n),1fr);gap:var(--gap,6px);
+  padding:var(--gap,6px);background:var(--ink);border-radius:22px;box-shadow:0 8px 0 rgba(58,35,20,.45)}
+.cell{position:relative;background:var(--cell);border-radius:var(--r,12px);display:grid;place-items:center;padding:12%;transition:background .15s}
+.cell:active:not(.taken){background:#fff0c9}
+.cell svg{width:100%;height:100%;overflow:visible;display:block}
+.cell .stroke{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw .28s ease-out forwards}
+.cell .stroke.d2{animation-delay:.12s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.cell.last{box-shadow:inset 0 0 0 3px rgba(58,35,20,.25)}
+.cell.win{background:var(--yellow);animation:winpulse .7s ease-in-out infinite alternate}
+@keyframes winpulse{to{transform:scale(1.08)}}
+.board.over .cell:not(.win){opacity:.55}
+.board.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+
+/* ---------- Leiste unten ---------- */
+.bar{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px}
+.btn{height:52px;padding:0 8px;border-radius:18px;background:var(--paper);border:4px solid var(--ink);box-shadow:0 5px 0 var(--ink);font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.btn:disabled{opacity:.4}
+.btn.main{background:linear-gradient(#ff7a5c,#ee4b3c);color:#fff;text-shadow:var(--outline);font-size:19px}
+.btn:focus-visible,.back:focus-visible,.step button:focus-visible,.seg button:focus-visible{outline:4px solid var(--o);outline-offset:3px}
+
+/* ---------- Einstellungen ---------- */
+.overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:calc(env(safe-area-inset-top) + 16px) 14px calc(env(safe-area-inset-bottom) + 16px);background:rgba(40,20,5,.5);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);transition:opacity .2s}
+.overlay.hidden{opacity:0;pointer-events:none}
+.card{width:min(100%,400px);margin:auto 0;background:var(--paper);border:5px solid var(--ink);border-radius:28px;box-shadow:0 8px 0 var(--ink);padding:18px 16px 18px;display:grid;gap:14px}
+.card h2{margin:0;text-align:center;font-size:34px;color:#fff;text-shadow:var(--outline),0 5px 0 var(--ink);transform:rotate(-1.5deg)}
+.row{display:grid;gap:6px}
+.row > label,.row > .lbl{font-size:17px}
+.row small{font-size:13px;font-weight:700;opacity:.75;line-height:1.25}
+.step{display:grid;grid-template-columns:56px 1fr 56px;align-items:center;gap:8px}
+.step button{height:52px;border-radius:16px;background:#fff;border:4px solid var(--ink);box-shadow:0 4px 0 var(--ink);font-size:28px;line-height:1}
+.step button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.step button:disabled{opacity:.35}
+.step output{text-align:center;font-size:30px;font-variant-numeric:tabular-nums}
+.names{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.names label{display:grid;gap:4px;font-size:14px}
+.names .lbl{display:flex;align-items:center;gap:6px}
+.names .lbl svg{width:20px;height:20px}
+.names input{width:100%;min-width:0;height:46px;padding:0 10px;font:inherit;font-size:17px;color:var(--ink);background:#fff;border:4px solid var(--ink);border-radius:14px;-webkit-user-select:text;user-select:text}
+.names input:focus{outline:none;border-color:var(--o)}
+.seg{display:grid;gap:6px}
+.seg button{min-height:44px;padding:6px 10px;border-radius:14px;background:#fff;border:3px solid var(--ink);font-size:15px;text-align:left;display:flex;align-items:center;gap:8px;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--yellow);border-width:4px;font-weight:900}
+.seg button:disabled{opacity:.4}
+.seg button i{font-style:normal;width:20px;height:20px;flex:none;border:3px solid var(--ink);border-radius:50%;background:#fff}
+.seg button[aria-pressed="true"] i{background:radial-gradient(circle,var(--ink) 0 4px,#fff 5px)}
+.hint{background:#fff;border:3px dashed var(--ink);border-radius:14px;padding:8px 10px;font-size:14px;font-weight:700;line-height:1.3}
+.hint.warn{background:#ffe1dc}
+.play{height:60px;font-size:26px}
+.reset{justify-self:center;font-size:14px;font-weight:700;text-decoration:underline;opacity:.75;padding:6px}
+
+/* ---------- Konfetti ---------- */
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:15;overflow:hidden}
+.confetti i{position:absolute;top:-20px;width:10px;height:16px;border:2px solid var(--ink);border-radius:3px}
+
+@media (prefers-reduced-motion:reduce){
+  .cell.win,.pl,.status .pop{animation:none;transition:none}
+  .cell .stroke{animation-duration:.01s}
+}
+.rotate{display:none}
+@media (orientation:landscape) and (max-height:520px){
+  .rotate{display:grid;position:fixed;inset:0;z-index:99;place-items:center;background:var(--yellow);font-size:26px;text-align:center;padding:20px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <a class="back" href="../" aria-label="Zur Spielerei">←</a>
+    <h1 class="title">Kreuz &amp; Kreis</h1>
+    <button class="back" id="muteBtn" aria-label="Ton an/aus">🔊</button>
+  </div>
+
+  <div class="players">
+    <div class="pl p0" id="pl0"><span class="sym" data-sym="0"></span><div><div class="nm" id="nm0"></div><span class="need" id="need0"></span></div><span class="sc" id="sc0">0</span></div>
+    <div class="draws">Remis<b id="scD">0</b></div>
+    <div class="pl p1" id="pl1"><span class="sym" data-sym="1"></span><div><div class="nm" id="nm1"></div><span class="need" id="need1"></span></div><span class="sc" id="sc1">0</span></div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="stage"><div class="board" id="board" role="grid" aria-label="Spielfeld"></div></div>
+
+  <div class="bar">
+    <button class="btn" id="undoBtn">↶ Zurück</button>
+    <button class="btn main" id="newBtn">Neue Runde</button>
+    <button class="btn" id="setBtn">⚙︎ Regeln</button>
+  </div>
+</div>
+
+<div class="overlay" id="settings">
+  <form class="card" id="setForm" autocomplete="off">
+    <h2>Spielregeln</h2>
+
+    <div class="row">
+      <span class="lbl">Rastergröße</span>
+      <div class="step">
+        <button type="button" id="sizeMinus" aria-label="Raster kleiner">−</button>
+        <output id="sizeOut">3 × 3</output>
+        <button type="button" id="sizePlus" aria-label="Raster größer">+</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="lbl">Zum Gewinnen in einer Reihe</span>
+      <div class="step">
+        <button type="button" id="winMinus" aria-label="Weniger in einer Reihe">−</button>
+        <output id="winOut">3</output>
+        <button type="button" id="winPlus" aria-label="Mehr in einer Reihe">+</button>
+      </div>
+      <small>Waagerecht, senkrecht oder diagonal.</small>
+    </div>
+
+    <div class="row">
+      <span class="lbl">Namen</span>
+      <div class="names">
+        <label><span class="lbl"><span data-sym="0"></span>Kreuz</span><input id="name0" maxlength="12" enterkeyhint="done"></label>
+        <label><span class="lbl"><span data-sym="1"></span>Kreis</span><input id="name1" maxlength="12" enterkeyhint="done"></label>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="lbl">Vorsprung</span>
+      <div class="seg" id="hcap">
+        <button type="button" data-v="0"><i></i>Gleiche Regeln für beide</button>
+        <button type="button" data-v="1"><i></i><span id="hcap1"></span></button>
+        <button type="button" data-v="2"><i></i><span id="hcap2"></span></button>
+      </div>
+      <small id="hcapNote"></small>
+    </div>
+
+    <div class="hint" id="fairHint"></div>
+
+    <button class="btn main play" type="submit">LOS!</button>
+    <button class="reset" type="button" id="resetScore">Punktestand auf 0 setzen</button>
+  </form>
+</div>
+
+<div class="confetti" id="confetti"></div>
+<div class="rotate">📱↻<br>Bitte das iPhone hochkant halten!</div>
+
+<script>
+(() => {
+'use strict';
+
+const INK = '#3a2314';
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+
+/* ---------- Symbole ---------- */
+function symX(anim) {
+  const c = anim ? ' class="stroke"' : '', c2 = anim ? ' class="stroke d2"' : '';
+  return `<svg viewBox="0 0 100 100" aria-hidden="true" style="--len:110">
+    <g fill="none" stroke-linecap="round">
+      <path d="M18 18L82 82" stroke="${INK}" stroke-width="26"${c}/>
+      <path d="M82 18L18 82" stroke="${INK}" stroke-width="26"${c2}/>
+      <path d="M18 18L82 82" stroke="#ee4b3c" stroke-width="13"${c}/>
+      <path d="M82 18L18 82" stroke="#ee4b3c" stroke-width="13"${c2}/>
+    </g></svg>`;
+}
+function symO(anim) {
+  const c = anim ? ' class="stroke"' : '';
+  return `<svg viewBox="0 0 100 100" aria-hidden="true" style="--len:220">
+    <g fill="none" stroke-linecap="round">
+      <circle cx="50" cy="50" r="33" stroke="${INK}" stroke-width="26" transform="rotate(-90 50 50)"${c}/>
+      <circle cx="50" cy="50" r="33" stroke="#2f8ae6" stroke-width="13" transform="rotate(-90 50 50)"${c}/>
+    </g></svg>`;
+}
+const sym = (p, anim) => p === 0 ? symX(anim) : symO(anim);
+document.querySelectorAll('[data-sym]').forEach(el => el.innerHTML = sym(+el.dataset.sym, false));
+
+/* ---------- Ton & Haptik ---------- */
+let AC = null, muted = store.get('ttt-muted', false);
+function audio() {
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (AC && AC.state !== 'running') AC.resume().catch(() => {});
+}
+function tone(f1, f2, dur, type = 'sine', vol = .2, delay = 0) {
+  if (muted || !AC) return;
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f1, t);
+  if (f2 !== f1) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + .03);
+}
+const sfx = {
+  place(p) { p === 0 ? tone(520, 300, .12, 'square', .12) : tone(330, 560, .14, 'triangle', .22); },
+  nope()   { tone(160, 120, .12, 'square', .1); },
+  win()    { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, f, .16, 'square', .12, i * .11)); },
+  draw()   { [392, 370, 349, 330].forEach((f, i) => tone(f, f, .18, 'triangle', .18, i * .14)); },
+  undo()   { tone(600, 300, .1, 'sine', .15); }
+};
+const hap = document.createElement('label');
+hap.setAttribute('aria-hidden', 'true');
+hap.style.cssText = 'position:fixed;left:-60px;top:0;width:40px;height:30px;opacity:.01;pointer-events:none';
+hap.innerHTML = '<input type="checkbox" switch tabindex="-1">';
+document.body.appendChild(hap);
+function haptic(ms = 12) {
+  if (muted) return;
+  try { if (navigator.vibrate) navigator.vibrate(ms); else hap.click(); } catch (e) {}
+}
+
+/* ---------- Einstellungen & Stand ---------- */
+const DEF = { size: 3, win: 3, hcap: 0, names: ['Kreuz', 'Kreis'] };
+let S = Object.assign({}, DEF, store.get('ttt-settings', {}));
+S.size = Math.min(10, Math.max(3, S.size | 0));
+S.win = Math.min(S.size, Math.max(3, S.win | 0));
+if (![0, 1, 2].includes(S.hcap)) S.hcap = 0;
+let score = store.get('ttt-score', [0, 0, 0]);
+let starter = store.get('ttt-starter', 0);
+
+const need = p => Math.min(S.size, S.win + (S.hcap === p + 1 ? 1 : 0));
+const nameOf = p => (S.names[p] || '').trim() || DEF.names[p];
+
+/* ---------- Spielzustand ---------- */
+const boardEl = $('#board'), statusEl = $('#status');
+let N = 3, grid = [], turn = 0, history = [], over = false, cells = [];
+
+function newRound(keepStarter) {
+  if (!keepStarter && (history.length || over)) { starter = 1 - starter; store.set('ttt-starter', starter); }
+  N = S.size;
+  grid = new Array(N * N).fill(-1);
+  history = []; over = false; turn = starter;
+  boardEl.style.setProperty('--n', N);
+  const gap = N <= 4 ? 7 : N <= 6 ? 5 : 4;
+  boardEl.style.setProperty('--gap', gap + 'px');
+  boardEl.style.setProperty('--r', (N <= 4 ? 14 : N <= 7 ? 9 : 6) + 'px');
+  boardEl.classList.remove('over');
+  boardEl.innerHTML = '';
+  cells = [];
+  for (let i = 0; i < N * N; i++) {
+    const b = document.createElement('button');
+    b.className = 'cell';
+    b.setAttribute('role', 'gridcell');
+    b.setAttribute('aria-label', `Feld ${Math.floor(i / N) + 1}-${i % N + 1}, frei`);
+    b.dataset.i = i;
+    boardEl.appendChild(b);
+    cells.push(b);
+  }
+  paintPlayers(); paintStatus(true); paintButtons();
+}
+
+function lineThrough(i, p) {
+  const r0 = Math.floor(i / N), c0 = i % N, k = need(p);
+  for (const [dr, dc] of [[0, 1], [1, 0], [1, 1], [1, -1]]) {
+    const line = [i];
+    for (const s of [1, -1]) {
+      let r = r0 + dr * s, c = c0 + dc * s;
+      while (r >= 0 && r < N && c >= 0 && c < N && grid[r * N + c] === p) { line.push(r * N + c); r += dr * s; c += dc * s; }
+    }
+    if (line.length >= k) return line;
+  }
+  return null;
+}
+
+function play(i) {
+  if (over) { newRound(); return; }
+  if (grid[i] !== -1) { sfx.nope(); return; }
+  audio();
+  const p = turn;
+  grid[i] = p;
+  history.push(i);
+  const cell = cells[i];
+  cell.classList.add('taken');
+  cell.innerHTML = sym(p, true);
+  cell.setAttribute('aria-label', `Feld ${Math.floor(i / N) + 1}-${i % N + 1}, ${p ? 'Kreis' : 'Kreuz'}`);
+  cells.forEach(c => c.classList.remove('last'));
+  cell.classList.add('last');
+  sfx.place(p); haptic();
+
+  const line = lineThrough(i, p);
+  if (line) {
+    over = true;
+    score[p]++; store.set('ttt-score', score);
+    line.forEach(j => cells[j].classList.add('win'));
+    boardEl.classList.add('over');
+    cells.forEach(c => c.classList.remove('last'));
+    setStatus(`🎉 ${esc(nameOf(p))} gewinnt!`);
+    setTimeout(() => { sfx.win(); confetti(p); haptic(40); }, 250);
+  } else if (history.length === N * N) {
+    over = true;
+    score[2]++; store.set('ttt-score', score);
+    boardEl.classList.add('over');
+    setStatus('Unentschieden! 🤝');
+    setTimeout(() => { sfx.draw(); boardEl.classList.remove('shake'); void boardEl.offsetWidth; boardEl.classList.add('shake'); }, 250);
+  } else {
+    turn = 1 - turn;
+    paintStatus(true);
+  }
+  paintPlayers(); paintButtons();
+}
+
+function undo() {
+  if (over || !history.length) return;
+  const i = history.pop();
+  grid[i] = -1;
+  const c = cells[i];
+  c.classList.remove('taken', 'last');
+  c.innerHTML = '';
+  c.setAttribute('aria-label', `Feld ${Math.floor(i / N) + 1}-${i % N + 1}, frei`);
+  if (history.length) cells[history[history.length - 1]].classList.add('last');
+  turn = 1 - turn;
+  sfx.undo();
+  paintPlayers(); paintStatus(true); paintButtons();
+}
+
+/* ---------- Anzeige ---------- */
+function esc(s) { return s.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+function setStatus(html) {
+  statusEl.innerHTML = `<span class="pop">${html}</span>`;
+}
+function paintStatus() {
+  setStatus(`<span style="display:inline-block;width:26px;height:26px;vertical-align:-5px">${sym(turn, false)}</span> ${esc(nameOf(turn))} ist dran`);
+}
+function paintPlayers() {
+  for (const p of [0, 1]) {
+    $('#nm' + p).textContent = nameOf(p);
+    $('#need' + p).textContent = `${need(p)} in einer Reihe`;
+    $('#sc' + p).textContent = score[p];
+    $('#pl' + p).classList.toggle('active', !over && turn === p);
+  }
+  $('#scD').textContent = score[2];
+}
+function paintButtons() {
+  $('#undoBtn').disabled = over || !history.length;
+  $('#newBtn').textContent = over ? 'Nochmal!' : 'Neue Runde';
+}
+
+boardEl.addEventListener('click', e => {
+  const c = e.target.closest('.cell');
+  if (c) play(+c.dataset.i);
+});
+$('#undoBtn').addEventListener('click', undo);
+$('#newBtn').addEventListener('click', () => { audio(); newRound(); });
+
+/* ---------- Konfetti ---------- */
+function confetti(p) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const box = $('#confetti');
+  const cols = p === 0 ? ['#ee4b3c', '#ffd23f', '#ff9d2e', '#fff'] : ['#2f8ae6', '#ffd23f', '#7ada52', '#fff'];
+  for (let k = 0; k < 40; k++) {
+    const i = document.createElement('i');
+    i.style.left = Math.random() * 100 + 'vw';
+    i.style.background = cols[k % cols.length];
+    box.appendChild(i);
+    const dx = (Math.random() - .5) * 160, rot = (Math.random() - .5) * 900;
+    const a = i.animate([
+      { transform: 'translate(0,0) rotate(0)' },
+      { transform: `translate(${dx}px,${innerHeight + 60}px) rotate(${rot}deg)` }
+    ], { duration: 1600 + Math.random() * 1200, delay: Math.random() * 300, easing: 'cubic-bezier(.3,.6,.6,1)' });
+    a.onfinish = () => i.remove();
+  }
+}
+
+/* ---------- Einstellungsdialog ---------- */
+const ov = $('#settings');
+let draft = null;
+
+function openSettings() {
+  draft = { size: S.size, win: S.win, hcap: S.hcap };
+  $('#name0').value = S.names[0] === DEF.names[0] ? '' : S.names[0];
+  $('#name1').value = S.names[1] === DEF.names[1] ? '' : S.names[1];
+  $('#name0').placeholder = DEF.names[0];
+  $('#name1').placeholder = DEF.names[1];
+  paintDraft();
+  ov.classList.remove('hidden');
+}
+function closeSettings() { ov.classList.add('hidden'); document.activeElement && document.activeElement.blur(); }
+
+function paintDraft() {
+  const d = draft;
+  d.win = Math.min(d.win, d.size);
+  const hcapPossible = d.win < d.size;
+  if (!hcapPossible) d.hcap = 0;
+  $('#sizeOut').textContent = `${d.size} × ${d.size}`;
+  $('#winOut').textContent = d.win;
+  $('#sizeMinus').disabled = d.size <= 3;
+  $('#sizePlus').disabled = d.size >= 10;
+  $('#winMinus').disabled = d.win <= 3;
+  $('#winPlus').disabled = d.win >= d.size;
+  const n0 = $('#name0').value.trim() || DEF.names[0], n1 = $('#name1').value.trim() || DEF.names[1];
+  $('#hcap1').textContent = `${n0} braucht ${d.win + 1}`;
+  $('#hcap2').textContent = `${n1} braucht ${d.win + 1}`;
+  document.querySelectorAll('#hcap button').forEach(b => {
+    const v = +b.dataset.v;
+    b.setAttribute('aria-pressed', String(v === d.hcap));
+    b.disabled = v !== 0 && !hcapPossible;
+  });
+  $('#hcapNote').textContent = hcapPossible
+    ? 'Der Stärkere braucht einen Stein mehr. Gut für Erwachsene gegen Kinder.'
+    : `Geht erst, wenn weniger als ${d.size} in einer Reihe nötig sind.`;
+
+  // Fairness-Hinweis
+  const hint = $('#fairHint');
+  let msg, warn = false;
+  if (d.size === 3 && d.win === 3) msg = 'Klassisch. Wer gut aufpasst, spielt immer Unentschieden.';
+  else if (d.win === 3 && d.size >= 4) { msg = 'Sehr leicht: Wer anfängt, kann fast immer gewinnen. Gut für kleine Kinder.'; warn = true; }
+  else if (d.win === 4 && d.size >= 6) { msg = 'Wer anfängt, hat hier einen klaren Vorteil.'; warn = true; }
+  else if (d.win >= 5 && d.size >= 8) msg = 'Wie Gomoku: lange Partien, viel Taktik.';
+  else if (d.win === d.size) msg = 'Eine ganze Reihe füllen ist schwer. Oft endet es unentschieden.';
+  else msg = 'Ausgewogene Einstellung.';
+  hint.textContent = msg + ' Der Start wechselt jede Runde.';
+  hint.classList.toggle('warn', warn);
+}
+
+$('#sizeMinus').addEventListener('click', () => { draft.size = Math.max(3, draft.size - 1); paintDraft(); });
+$('#sizePlus').addEventListener('click', () => { draft.size = Math.min(10, draft.size + 1); paintDraft(); });
+$('#winMinus').addEventListener('click', () => { draft.win = Math.max(3, draft.win - 1); paintDraft(); });
+$('#winPlus').addEventListener('click', () => { draft.win = Math.min(draft.size, draft.win + 1); paintDraft(); });
+$('#hcap').addEventListener('click', e => { const b = e.target.closest('button'); if (b && !b.disabled) { draft.hcap = +b.dataset.v; paintDraft(); } });
+['#name0', '#name1'].forEach(id => $(id).addEventListener('input', paintDraft));
+
+$('#setForm').addEventListener('submit', e => {
+  e.preventDefault();
+  audio();
+  const rulesChanged = draft.size !== S.size || draft.win !== S.win || draft.hcap !== S.hcap;
+  S.size = draft.size; S.win = draft.win; S.hcap = draft.hcap;
+  const names = [$('#name0').value.trim() || DEF.names[0], $('#name1').value.trim() || DEF.names[1]];
+  if (names[0] !== S.names[0] || names[1] !== S.names[1]) { score = [0, 0, 0]; store.set('ttt-score', score); }
+  S.names = names;
+  store.set('ttt-settings', S);
+  closeSettings();
+  if (rulesChanged || !history.length || over) newRound(!history.length && !over);
+  else { paintPlayers(); paintStatus(); }
+});
+$('#setBtn').addEventListener('click', openSettings);
+$('#resetScore').addEventListener('click', () => {
+  score = [0, 0, 0]; store.set('ttt-score', score); paintPlayers();
+  const b = $('#resetScore'); b.textContent = 'Punktestand ist auf 0'; setTimeout(() => b.textContent = 'Punktestand auf 0 setzen', 1500);
+});
+
+/* ---------- Ton-Schalter ---------- */
+const muteBtn = $('#muteBtn');
+const paintMute = () => muteBtn.textContent = muted ? '🔇' : '🔊';
+paintMute();
+muteBtn.addEventListener('click', () => { muted = !muted; store.set('ttt-muted', muted); paintMute(); audio(); });
+
+/* ---------- iOS-Gesten ---------- */
+['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ---------- Start ---------- */
+newRound(true);
+if (!store.get('ttt-seen', false)) { store.set('ttt-seen', true); openSettings(); }
+else ov.classList.add('hidden');
+})();
+</script>
+</body>
+</html>

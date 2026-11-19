@@ -5,6 +5,7 @@ Kleine Spiele fürs iPhone, jedes als einzelne HTML-Datei ohne Build und ohne Ab
 | Spiel | Ordner | Beschreibung |
 |---|---|---|
 | Hau den Erdi! | [`hau-den-erdi/`](hau-den-erdi/) | Cartoon-Whack-a-Mole: Erdmännchen hauen, Helme knacken, Igel verschonen |
+| Kreuz & Kreis | [`tic-tac-toe/`](tic-tac-toe/) | Tic Tac Toe zu zweit an einem Gerät, Raster 3×3 bis 10×10, Gewinnlänge einstellbar, optionaler Vorsprung |
 
 Die Startseite (`index.html`) listet alle Spiele. Live: https://benjaminra-art.github.io/Spielerei/
 
@@ -21,6 +22,14 @@ Die Seite oder ein einzelnes Spiel in Safari öffnen, dann *Teilen → Zum Home-
 ## Hinweis
 
 Dieses Repo ist öffentlich. Alles, was hier liegt, auch Entwürfe und die Git-Historie, ist für jeden sichtbar.
+
+## Kreuz & Kreis
+
+- Zwei Spieler abwechselnd am selben iPhone.
+- **Rastergröße** 3×3 bis 10×10, **Gewinnlänge** 3 bis zur Rastergröße (waagerecht, senkrecht, diagonal).
+- **Vorsprung:** Ein Spieler kann einen Stein mehr in der Reihe brauchen, z. B. Erwachsener 4, Kind 3.
+- Der Start wechselt jede Runde, weil auf großen Feldern mit kurzer Gewinnlänge der erste Spieler stark im Vorteil ist.
+- „Zurück“ nimmt den letzten Zug zurück. Namen, Regeln und Punktestand bleiben im Browser gespeichert. Neue Namen setzen den Punktestand auf 0.
 
 ## Hau den Erdi!
 
